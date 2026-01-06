@@ -1,17 +1,10 @@
 --!strict
---[=[
-    @class SeatController
-    @client
-    Módulo 1: Detección de Estado de Asiento.
-    Este controlador gestiona la detección de cuando el jugador se sienta o se levanta.
-]=]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Packages = ReplicatedStorage:WaitForChild("Packages")
 local Knit = require(Packages:WaitForChild("Knit"))
 
--- Variables privadas
+-- Variable privada (Solo este script la conoce)
 local _player = Players.LocalPlayer
 
 local SeatController = Knit.CreateController({
@@ -19,34 +12,42 @@ local SeatController = Knit.CreateController({
 })
 
 function SeatController:KnitStart()
-	print("[SeatController] Initialized.")
+	print("🚀 [SeatController] KnitStart: Iniciando...")
 
-	-- Manejo de persistencia: Detectar personaje actual y futuros respawns.
+	-- CASO 1: El personaje ya existe al cargar el script
 	if _player.Character then
+		print("📦 [SeatController] Personaje detectado al inicio. Procesando...")
 		task.spawn(function()
 			self:_onCharacterAdded(_player.Character :: Model)
 		end)
 	end
 
+	-- CASO 2: El personaje carga después o revive (Respawn)git
 	_player.CharacterAdded:Connect(function(character)
+		print("♻️ [SeatController] CharacterAdded disparado (Nuevo personaje).")
 		self:_onCharacterAdded(character)
 	end)
 end
 
 function SeatController:_onCharacterAdded(character: Model)
-	local humanoid = character:WaitForChild("Humanoid") :: Humanoid
+	print("🔍 [SeatController] Buscando Humanoid en: " .. character.Name)
 
-	-- Luau Engineering: Conectamos al evento nativo .Seated
-	-- Este evento es más eficiente que pollear propiedades.
+	local humanoid = character:WaitForChild("Humanoid", 5) :: Humanoid?
+
+	if not humanoid then
+		print("❌ [SeatController] Error: No se encontró Humanoid a tiempo.")
+		return
+	end
+
+	print("✅ [SeatController] Humanoid encontrado. Conectando evento .Seated")
+
+	-- Escuchar cuando el estado de sentado cambia
 	humanoid.Seated:Connect(function(isSeated: boolean, seatPart: Instance?)
 		if isSeated then
-			-- Business Logic: El jugador se ha sentado.
-			-- seatPart nos dice exactamente en qué objeto.
-			local seatName = if seatPart then seatPart.Name else "Unknown Seat"
-			print(string.format("[SeatController] Player SAT DOWN on: %s", seatName))
+			local name = if seatPart then seatPart.Name else "Asiento Desconocido"
+			print("🪑 [SeatController] EVENTO: El jugador se ha SENTADO en: " .. name)
 		else
-			-- Business Logic: El jugador se ha levantado.
-			print("[SeatController] Player STOOD UP.")
+			print("🏃 [SeatController] EVENTO: El jugador se ha LEVANTADO.")
 		end
 	end)
 end
