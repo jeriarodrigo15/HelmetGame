@@ -110,3 +110,4 @@ function SeatController:playAndFreezeAnimation(Humanoid: Humanoid, SessionJanito
 end
 
 return SeatController
+ 
